@@ -9,6 +9,7 @@ import Spinner from "./spinner.js";
 import authStore from "../../Stores/authStore";
 
 import styles from "./styles";
+import socketStore from "../../Stores/SocketStore";
 
 import { Button, Item, Text, View } from "native-base";
 import { Image, TouchableOpacity } from "react-native";
@@ -21,8 +22,29 @@ class Queue extends Component {
       position: null
     };
   }
+  restaurantRequest() {
+    if (AuthStore.user) {
+      socketStore.getRestaurant(this.state.restaurant, AuthStore.user.user_id);
+    } else {
+      socketStore.getRestaurant(this.state.restaurant, null);
+    }
+  }
+  componentWillUnmount() {
+    socketStore.socket.off("q info");
+    socketStore.socket.off("user spot");
+    socketStore.socket.off("update queue");
+  }
 
-  componentDidMount() {}
+  componentDidMount() {
+    this.restaurantRequest();
+    socketStore.socket.on("q info", data => {
+      this.setState({ currentQ: data.restaurantQ });
+    });
+
+    socketStore.socket.on("user spot", data => {
+      this.setState({ position: data.spot });
+    });
+  }
 
   getQueueNumber() {
     if (this.state.position) {
